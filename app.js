@@ -6,9 +6,10 @@ var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 
 var routes = require('./routes/index');
-var users = require('./routes/users');
 
 var app = express();
+
+var io = require('socket.io').listen(app);
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -23,7 +24,23 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routes);
-app.use('/users', users);
+
+io.sockets.on('connection', function (socket) {
+    //our other events...
+    socket.on('setPseudo', function (data) {
+        socket.set('pseudo', data);
+    });
+
+    socket.on('message', function (message) {
+        socket.get('pseudo', function (error, name) {
+            var data = { 'message' : message, pseudo : name };
+            socket.broadcast.emit('message', data);
+            console.log("user " + name + " send this : " + message);
+        })
+    });
+});
+
+
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
